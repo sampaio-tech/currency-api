@@ -1,0 +1,192 @@
+# Setup Guide
+
+This guide walks you through everything needed to deploy your own instance of
+currency-api. Follow each step in order.
+
+---
+
+## Prerequisites
+
+- A [GitHub](https://github.com) account
+- A [Cloudflare](https://cloudflare.com) account (free tier is enough)
+- Rust installed locally — https://rustup.rs
+
+---
+
+## Step 1 — Fork or push this repo to GitHub
+
+If you cloned this project locally, create a new GitHub repository and push it:
+
+```bash
+git remote add origin https://github.com/YOUR_USERNAME/currency-api.git
+git branch -M main
+git push -u origin main
+```
+
+---
+
+## Step 2 — Get your fiat exchange rate API key
+
+We use **ExchangeRate-API** as the fiat source. It supports EUR as a base and
+has a free tier of 1,500 requests/month (more than enough for daily runs).
+
+1. Go to https://www.exchangerate-api.com
+2. Click **"Get Free Key"**
+3. Sign up with your email
+4. After confirming your email, you will see your **API key** on the dashboard
+5. Copy it — you will need it in Step 5
+
+The free URL format is:
+```
+https://v6.exchangerate-api.com/v6/YOUR_API_KEY/latest/EUR
+```
+
+> If you prefer not to use an API key, the default fiat source
+> (`https://open.er-api.com/v6/latest/EUR`) works without one,
+> but has stricter rate limits.
+
+---
+
+## Step 3 — Get your CoinGecko API key (optional but recommended)
+
+CoinGecko provides crypto prices. The free tier works without a key, but
+adding one gives you higher rate limits and more reliability.
+
+1. Go to https://www.coingecko.com/en/api
+2. Click **"Get Your Free API Key"**
+3. Sign up and verify your email
+4. Go to your dashboard → **API Keys** → copy your **Demo API key**
+
+> Without a key the default CoinGecko URL still works, just leave
+> `CRYPTO_API_KEY` empty in the next steps.
+
+---
+
+## Step 4 — Create your Cloudflare Pages project
+
+Cloudflare Pages will host all the generated JSON files for free.
+
+### 4a. Get your Cloudflare Account ID
+
+1. Log in at https://dash.cloudflare.com
+2. On the right sidebar of the homepage you will see **Account ID**
+3. Copy it
+
+### 4b. Create an API Token
+
+1. Click your profile icon (top right) → **My Profile**
+2. Go to **API Tokens** → **Create Token**
+3. Click **"Use template"** next to **"Edit Cloudflare Workers"**
+4. Under **Account Resources**, select your account
+5. Under **Zone Resources**, select **All zones**
+6. Click **Continue to Summary** → **Create Token**
+7. Copy the token — it is only shown once
+
+### 4c. Create the Pages project
+
+Install Wrangler (Cloudflare's CLI) and create the project:
+
+```bash
+npm install -g wrangler
+wrangler login
+wrangler pages project create currency-api
+```
+
+When asked for the production branch name, enter: `latest`
+
+> The project name `currency-api` will become part of your URL:
+> `latest.currency-api.pages.dev`
+> You can choose any name you want — just keep it consistent.
+
+---
+
+## Step 5 — Add secrets to your GitHub repository
+
+GitHub Actions needs these values to fetch rates and deploy.
+
+1. On GitHub, go to your repository
+2. Click **Settings** → **Secrets and variables** → **Actions**
+3. Click **"New repository secret"** and add each one below:
+
+| Secret name      | Value                                                              |
+|------------------|--------------------------------------------------------------------|
+| `CF_API_TOKEN`   | The Cloudflare API token from Step 4b                             |
+| `CF_ACCOUNT_ID`  | Your Cloudflare Account ID from Step 4a                           |
+| `FIAT_API_URL`   | `https://v6.exchangerate-api.com/v6/YOUR_API_KEY/latest/EUR`      |
+| `FIAT_API_KEY`   | *(leave empty or skip if using the URL above with key embedded)*  |
+| `CRYPTO_API_URL` | `https://api.coingecko.com/api/v3/simple/price`                   |
+| `CRYPTO_API_KEY` | Your CoinGecko Demo API key from Step 3 *(optional)*              |
+
+> For `FIAT_API_URL`, just embed the key directly in the URL as shown.
+> You don't need to set `FIAT_API_KEY` separately.
+
+---
+
+## Step 6 — Trigger your first deployment
+
+The workflow runs automatically every day at 00:00 UTC. To run it right now:
+
+1. On GitHub, go to your repository
+2. Click **Actions** tab
+3. Click **"Daily Rate Fetch & Deploy"** in the left sidebar
+4. Click **"Run workflow"** → **"Run workflow"**
+
+Wait about 2–3 minutes. When it turns green, your API is live at:
+
+```
+https://latest.currency-api.pages.dev/v1/currencies.json
+https://latest.currency-api.pages.dev/v1/currencies/usd.json
+```
+
+---
+
+## Step 7 — Verify it works
+
+Open your browser and visit:
+
+```
+https://latest.currency-api.pages.dev/v1/currencies/eur.json
+```
+
+You should see a JSON response with today's date and exchange rates.
+
+---
+
+## Troubleshooting
+
+### The workflow failed
+
+1. Click the failed workflow run on the **Actions** tab
+2. Click the failing step to see the error log
+3. Common causes:
+   - Wrong `CF_API_TOKEN` → re-create the token in Cloudflare
+   - Wrong `FIAT_API_URL` → double-check the URL and your API key
+   - CoinGecko rate limit → add a `CRYPTO_API_KEY`
+
+### I see an old date in the response
+
+Cloudflare CDN caches files. Wait a few minutes after deployment or append
+`?nocache=1` to the URL to bypass the cache temporarily.
+
+### I want to use a custom domain
+
+1. Go to https://dash.cloudflare.com → **Pages** → your project
+2. Click **Custom domains** → **Set up a custom domain**
+3. Follow the instructions to add a CNAME record in your DNS
+
+---
+
+## Environment variables reference
+
+These can be set locally in your shell for testing or as GitHub secrets for CI.
+
+| Variable         | Required | Default                                         | Description                          |
+|------------------|----------|-------------------------------------------------|--------------------------------------|
+| `FIAT_API_URL`   | No       | `https://open.er-api.com/v6/latest/EUR`         | EUR-based fiat rate endpoint         |
+| `FIAT_API_KEY`   | No       | *(none)*                                        | Bearer token for fiat source         |
+| `CRYPTO_API_URL` | No       | `https://api.coingecko.com/api/v3/simple/price` | CoinGecko-compatible price endpoint  |
+| `CRYPTO_API_KEY` | No       | *(none)*                                        | `x-cg-demo-api-key` header value     |
+| `CF_API_TOKEN`   | Yes*     | *(none)*                                        | Cloudflare API token for deployment  |
+| `CF_ACCOUNT_ID`  | Yes*     | *(none)*                                        | Cloudflare account ID                |
+
+*Required only in GitHub Actions for deployment. Not needed for local runs.
