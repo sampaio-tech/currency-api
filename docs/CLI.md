@@ -15,7 +15,7 @@ writes a tree of static JSON files ready to be deployed to a CDN.
             └────────┬────────────┘
                      │
           ┌──────────▼──────────┐
-          │   sources/fiat.rs   │  GET open.er-api.com → EUR-based fiat rates
+          │   sources/fiat.rs   │  GET fiat API        → EUR-based fiat rates
           │   sources/crypto.rs │  GET CoinGecko       → EUR-based crypto rates
           └──────────┬──────────┘
                      │ merge
@@ -124,18 +124,19 @@ The entire `dist/` directory is what gets deployed to Cloudflare Pages.
 The CLI reads these at startup. Set them in your shell for local runs or as
 GitHub secrets for CI (see [SETUP.md](./SETUP.md)).
 
-| Variable         | Required | Default                                          | Description                         |
-|------------------|----------|--------------------------------------------------|-------------------------------------|
-| `FIAT_API_URL`   | No       | `https://open.er-api.com/v6/latest/EUR`          | EUR-based fiat rate endpoint        |
-| `FIAT_API_KEY`   | No       | *(none)*                                         | Bearer token for fiat source        |
-| `CRYPTO_API_URL` | No       | `https://api.coingecko.com/api/v3/simple/price`  | Crypto price endpoint               |
-| `CRYPTO_API_KEY` | No       | *(none)*                                         | `x-cg-demo-api-key` header value    |
+| Variable         | Required | Default                                          | Description                                                  |
+|------------------|----------|--------------------------------------------------|--------------------------------------------------------------|
+| `FIAT_API_URL`   | No       | `https://open.er-api.com/v6/latest/EUR`          | EUR-based fiat endpoint. Compatible with open.er-api.com (`rates`) and exchangerate-api.com v6 (`conversion_rates`). Must use EUR as base. |
+| `FIAT_API_KEY`   | No       | *(none)*                                         | Bearer token for fiat source                                 |
+| `CRYPTO_API_URL` | No       | `https://api.coingecko.com/api/v3/simple/price`  | Crypto price endpoint                                        |
+| `CRYPTO_API_KEY` | No       | *(none)*                                         | `x-cg-demo-api-key` header value                             |
 
-### Local run with custom API keys
+### Local run with API keys
+
+Copy `.env.example` to `.env`, fill in your keys, then:
+
 ```bash
-export FIAT_API_URL="https://v6.exchangerate-api.com/v6/YOUR_KEY/latest/EUR"
-export CRYPTO_API_KEY="your-coingecko-key"
-cargo run --release
+source .env && cargo run --release
 ```
 
 ---
