@@ -4,7 +4,7 @@ A free, open-source currency exchange rate API — rebuilt in Rust.
 
 Inspired by [fawazahmed0/exchange-api](https://github.com/fawazahmed0/exchange-api).
 
-Every day a GitHub Action fetches live exchange rates, generates static JSON files,
+GitHub Actions fetches live exchange rates every hour, generates static JSON files,
 and deploys them to Cloudflare Pages. No server. No database. No rate limits.
 
 The goal of this project is to let anyone **fork or clone it and have their own currency API running in minutes** — just plug in your API keys, configure the GitHub secrets, and you're live.
@@ -16,7 +16,7 @@ See [docs/SETUP.md](./docs/SETUP.md) to get started.
 ## How it works
 
 ```
-GitHub Actions (daily cron)
+GitHub Actions (every 30 min — configurable)
     │
     ├── fetches fiat rates   (exchangerate-api.com v6 or open.er-api.com)
     ├── fetches crypto rates (CoinGecko)
@@ -24,8 +24,9 @@ GitHub Actions (daily cron)
     ├── computes cross rates for every currency
     ├── writes static JSON files to dist/
     │
-    ├── deploys to Cloudflare Pages → latest.your-project.pages.dev
-    └── deploys to Cloudflare Pages → 2026-03-06.your-project.pages.dev
+    ├── deploys to Cloudflare Pages → your-project.pages.dev          (production / latest)
+    ├── deploys to Cloudflare Pages → 2026-03-07.your-project.pages.dev
+    └── deploys to Cloudflare Pages → 2026-03-07t14-30.your-project.pages.dev
 ```
 
 ---
@@ -36,10 +37,14 @@ Replace `{project}` with your Cloudflare Pages project name.
 
 | Endpoint | URL |
 |---|---|
-| All currencies | `https://latest.{project}.pages.dev/v1/currencies.json` |
-| Rates for USD | `https://latest.{project}.pages.dev/v1/currencies/usd.json` |
-| Rates for EUR | `https://latest.{project}.pages.dev/v1/currencies/eur.json` |
-| Historical (date) | `https://2026-03-06.{project}.pages.dev/v1/currencies/usd.json` |
+| All currencies (latest) | `https://{project}.pages.dev/v1/currencies.json` |
+| Rates for USD (latest) | `https://{project}.pages.dev/v1/currencies/usd.json` |
+| Rates for EUR (latest) | `https://{project}.pages.dev/v1/currencies/eur.json` |
+| Historical (date) | `https://2026-03-07.{project}.pages.dev/v1/currencies/usd.json` |
+| Historical (timestamp) | `https://2026-03-07t14-30.{project}.pages.dev/v1/currencies/usd.json` |
+
+> The production branch (`latest`) is served at the **root domain** `{project}.pages.dev`.
+> Date and timestamp snapshots get their own subdomain via Cloudflare Pages branch aliases.
 
 Every endpoint also has a minified version: replace `.json` with `.min.json`.
 
@@ -57,7 +62,8 @@ Every endpoint also has a minified version: replace `.json` with `.min.json`.
 **`/v1/currencies/usd.json`**
 ```json
 {
-  "date": "2026-03-06",
+  "date": "2026-03-07",
+  "timestamp": "2026-03-07T14:30:00Z",
   "usd": {
     "eur": 0.92,
     "gbp": 0.79,
@@ -66,6 +72,8 @@ Every endpoint also has a minified version: replace `.json` with `.min.json`.
   }
 }
 ```
+
+The `timestamp` field is present on sub-daily runs. Date-only runs (e.g. `--date 2026-03-07`) omit it for backward compatibility.
 
 ---
 
@@ -90,7 +98,8 @@ currency-api/
 │   └── SETUP.md         # step-by-step deployment guide
 ├── .github/
 │   └── workflows/
-│       └── daily.yml    # runs every day at 00:00 UTC
+│       ├── daily.yml        # runs every day at 00:00 UTC (date snapshots)
+│       └── sub-daily.yml    # runs every 30 min (timestamp snapshots, configurable)
 └── Cargo.toml
 ```
 
@@ -123,18 +132,25 @@ See [docs/SETUP.md](./docs/SETUP.md) for a full step-by-step guide on how to:
 
 ---
 
-## Roadmap
+## Update frequency
 
-### Sub-daily updates
+The sub-daily workflow (`sub-daily.yml`) runs every hour by default. To change it, edit the `cron` expression in `.github/workflows/sub-daily.yml`:
 
-Currently the API updates once per day. The goal is to support configurable update intervals — minute-by-minute, hour-by-hour, or at a fixed schedule — while keeping full backward compatibility with date-based URLs.
+```yaml
+- cron: "0 * * * *"   # Every hour
+```
 
-Planned URL scheme:
+**Free-tier budget** (both workflows combined, worst-case 31-day month):
 
-| Snapshot | URL |
-|---|---|
-| Latest | `https://latest.{project}.pages.dev/v1/currencies/usd.json` |
-| By date | `https://2026-03-07.{project}.pages.dev/v1/currencies/usd.json` |
-| By timestamp | `https://2026-03-07t14-30.{project}.pages.dev/v1/currencies/usd.json` |
+| Expression | Runs/month | Fiat requests | Fits 1 500 limit? |
+|---|---|---|---|
+| `0 * * * *` | ~775 | ~775 | ✅ Yes *(default)* |
+| `*/30 * * * *` | ~1 519 | ~1 519 | ❌ No (31-day months) |
+| `0 */2 * * *` | ~403 | ~403 | ✅ Yes |
+| `0 */6 * * *` | ~155 | ~155 | ✅ Yes |
 
-The `--date` flag would be extended to accept an optional time component (`2026-03-07T14:30`) so each run stamps its output with the exact fetch time. The GitHub Actions workflow would be updated to support custom cron intervals (e.g. every 15 minutes, every hour) configured via a single variable.
+> Each run makes one request to ExchangeRate-API (1 500/month free) and one to CoinGecko
+> (10 000/month free). The fiat limit is the bottleneck — every-hour is the highest
+> frequency that stays safely within the free tier.
+
+The daily workflow (`daily.yml`) continues to run independently at 00:00 UTC and produces date-only snapshots (no `timestamp` field) for full backward compatibility.
