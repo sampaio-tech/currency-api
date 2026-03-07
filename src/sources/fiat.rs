@@ -4,9 +4,11 @@ use std::collections::BTreeMap;
 
 use crate::types::RateMap;
 
-/// exchangerate-api.com v6 response shape.
+/// Supports both exchangerate-api.com v6 (`conversion_rates`) and
+/// open.er-api.com (`rates`).
 #[derive(Deserialize)]
 struct ErApiResponse {
+    #[serde(alias = "rates")]
     conversion_rates: BTreeMap<String, f64>,
 }
 
