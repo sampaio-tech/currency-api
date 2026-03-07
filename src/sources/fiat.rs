@@ -4,10 +4,10 @@ use std::collections::BTreeMap;
 
 use crate::types::RateMap;
 
-/// open.er-api.com response shape (also compatible with exchangerate-api.com v6).
+/// exchangerate-api.com v6 response shape.
 #[derive(Deserialize)]
 struct ErApiResponse {
-    rates: BTreeMap<String, f64>,
+    conversion_rates: BTreeMap<String, f64>,
 }
 
 /// Fetches EUR-based fiat exchange rates from the configured endpoint.
@@ -44,7 +44,7 @@ pub async fn fetch_fiat_rates(api_url: &str, api_key: Option<&str>) -> Result<Ra
 
     // Lowercase all keys and ensure EUR = 1.0 is always present
     let mut rates: RateMap = body
-        .rates
+        .conversion_rates
         .into_iter()
         .map(|(k, v)| (k.to_lowercase(), v))
         .collect();
