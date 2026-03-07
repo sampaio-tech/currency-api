@@ -23,6 +23,7 @@ use crate::types::{CurrencyList, CurrencyOutput, RateMap};
 pub async fn generate_all(
     output_dir: &Path,
     date: &str,
+    timestamp: Option<&str>,
     eur_rates: &RateMap,
     currency_list: &CurrencyList,
 ) -> Result<()> {
@@ -64,6 +65,7 @@ pub async fn generate_all(
     for (base_code, rates) in &cross_rates {
         let output = CurrencyOutput {
             date: date.to_string(),
+            timestamp: timestamp.map(|s| s.to_string()),
             rates: {
                 let mut m = BTreeMap::new();
                 m.insert(base_code.clone(), rates.clone());
