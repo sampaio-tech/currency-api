@@ -12,6 +12,8 @@ pub type RateMap = BTreeMap<String, f64>;
 #[derive(Serialize, Deserialize)]
 pub struct CurrencyOutput {
     pub date: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub timestamp: Option<String>,
     /// The key is the base currency code, value is all cross rates from it.
     #[serde(flatten)]
     pub rates: BTreeMap<String, RateMap>,
