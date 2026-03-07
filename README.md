@@ -7,6 +7,10 @@ Inspired by [fawazahmed0/exchange-api](https://github.com/fawazahmed0/exchange-a
 Every day a GitHub Action fetches live exchange rates, generates static JSON files,
 and deploys them to Cloudflare Pages. No server. No database. No rate limits.
 
+The goal of this project is to let anyone **fork or clone it and have their own currency API running in minutes** — just plug in your API keys, configure the GitHub secrets, and you're live.
+
+See [docs/SETUP.md](./docs/SETUP.md) to get started.
+
 ---
 
 ## How it works
