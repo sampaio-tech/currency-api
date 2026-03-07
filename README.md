@@ -14,7 +14,7 @@ and deploys them to Cloudflare Pages. No server. No database. No rate limits.
 ```
 GitHub Actions (daily cron)
     │
-    ├── fetches fiat rates   (open.er-api.com)
+    ├── fetches fiat rates   (exchangerate-api.com v6 or open.er-api.com)
     ├── fetches crypto rates (CoinGecko)
     │
     ├── computes cross rates for every currency
@@ -76,7 +76,7 @@ currency-api/
 │   ├── normalize.rs     # merges sources + computes cross rates
 │   ├── generate.rs      # writes the dist/ file tree
 │   └── sources/
-│       ├── fiat.rs      # fetches fiat rates (open.er-api.com)
+│       ├── fiat.rs      # fetches fiat rates (exchangerate-api.com v6 / open.er-api.com)
 │       └── crypto.rs    # fetches crypto rates (CoinGecko)
 ├── data/
 │   ├── currencies.json  # master list: currency code → name
@@ -95,11 +95,14 @@ currency-api/
 ## Running locally
 
 ```bash
-# Fetch rates and generate files into dist/
-cargo run --release
+# Copy the example env file and fill in your API keys
+cp .env.example .env
+
+# Load env vars and run
+source .env && cargo run --release
 
 # Preview what would be fetched without writing files
-cargo run -- --dry-run
+source .env && cargo run -- --dry-run
 ```
 
 See [docs/CLI.md](./docs/CLI.md) for all flags and examples.
@@ -113,3 +116,21 @@ See [docs/SETUP.md](./docs/SETUP.md) for a full step-by-step guide on how to:
 - Create a Cloudflare Pages project
 - Configure GitHub secrets
 - Trigger your first deployment
+
+---
+
+## Roadmap
+
+### Sub-daily updates
+
+Currently the API updates once per day. The goal is to support configurable update intervals — minute-by-minute, hour-by-hour, or at a fixed schedule — while keeping full backward compatibility with date-based URLs.
+
+Planned URL scheme:
+
+| Snapshot | URL |
+|---|---|
+| Latest | `https://latest.{project}.pages.dev/v1/currencies/usd.json` |
+| By date | `https://2026-03-07.{project}.pages.dev/v1/currencies/usd.json` |
+| By timestamp | `https://2026-03-07t14-30.{project}.pages.dev/v1/currencies/usd.json` |
+
+The `--date` flag would be extended to accept an optional time component (`2026-03-07T14:30`) so each run stamps its output with the exact fetch time. The GitHub Actions workflow would be updated to support custom cron intervals (e.g. every 15 minutes, every hour) configured via a single variable.
