@@ -1,5 +1,7 @@
 # currency-api
 
+[![Sub-daily Rate Fetch & Deploy](https://github.com/sampaio-tech/currency-api/actions/workflows/sub-daily.yml/badge.svg)](https://github.com/sampaio-tech/currency-api/actions/workflows/sub-daily.yml) [![Daily Rate Fetch & Deploy](https://github.com/sampaio-tech/currency-api/actions/workflows/daily.yml/badge.svg)](https://github.com/sampaio-tech/currency-api/actions/workflows/daily.yml)
+
 A free, open-source currency exchange rate API — rebuilt in Rust.
 
 Inspired by [fawazahmed0/exchange-api](https://github.com/fawazahmed0/exchange-api).
