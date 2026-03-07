@@ -160,7 +160,7 @@ You should see a JSON response with today's date and exchange rates.
 2. Click the failing step to see the error log
 3. Common causes:
    - Wrong `CF_API_TOKEN` → re-create the token in Cloudflare
-   - Wrong `FIAT_API_URL` → double-check the URL and your API key
+   - Wrong `FIAT_API_URL` → double-check the URL, your API key, and that the base is `/latest/EUR` not `/latest/USD`
    - CoinGecko rate limit → add a `CRYPTO_API_KEY`
 
 ### I see an old date in the response
@@ -178,15 +178,24 @@ Cloudflare CDN caches files. Wait a few minutes after deployment or append
 
 ## Environment variables reference
 
-These can be set locally in your shell for testing or as GitHub secrets for CI.
+For local testing, copy `.env.example` to `.env`, fill in your values, and run:
 
-| Variable         | Required | Default                                         | Description                          |
-|------------------|----------|-------------------------------------------------|--------------------------------------|
-| `FIAT_API_URL`   | No       | `https://open.er-api.com/v6/latest/EUR`         | EUR-based fiat rate endpoint         |
-| `FIAT_API_KEY`   | No       | *(none)*                                        | Bearer token for fiat source         |
-| `CRYPTO_API_URL` | No       | `https://api.coingecko.com/api/v3/simple/price` | CoinGecko-compatible price endpoint  |
-| `CRYPTO_API_KEY` | No       | *(none)*                                        | `x-cg-demo-api-key` header value     |
-| `CF_API_TOKEN`   | Yes*     | *(none)*                                        | Cloudflare API token for deployment  |
-| `CF_ACCOUNT_ID`  | Yes*     | *(none)*                                        | Cloudflare account ID                |
+```bash
+source .env && cargo run -- --dry-run
+```
+
+For CI, set these as GitHub repository secrets (Settings → Secrets → Actions):
+
+| Variable         | Required | Default                                         | Description                                              |
+|------------------|----------|-------------------------------------------------|----------------------------------------------------------|
+| `FIAT_API_URL`   | No       | `https://open.er-api.com/v6/latest/EUR`         | EUR-based fiat endpoint — **must use `/latest/EUR`**     |
+| `FIAT_API_KEY`   | No       | *(none)*                                        | Bearer token for fiat source                             |
+| `CRYPTO_API_URL` | No       | `https://api.coingecko.com/api/v3/simple/price` | CoinGecko-compatible price endpoint                      |
+| `CRYPTO_API_KEY` | No       | *(none)*                                        | `x-cg-demo-api-key` header value                         |
+| `CF_API_TOKEN`   | Yes*     | *(none)*                                        | Cloudflare API token for deployment                      |
+| `CF_ACCOUNT_ID`  | Yes*     | *(none)*                                        | Cloudflare account ID                                    |
 
 *Required only in GitHub Actions for deployment. Not needed for local runs.
+
+> **Important:** `FIAT_API_URL` must always use EUR as the base currency (e.g. `/latest/EUR`).
+> Using a different base (e.g. `/latest/USD`) will produce incorrect cross rates.
