@@ -55,10 +55,10 @@ The binary will be at `./target/release/fetcher`.
 fetcher [OPTIONS]
 
 Options:
-  --output <DIR>        Output directory              [default: dist]
-  --date <YYYY-MM-DD>   Override today's date         [default: system date]
-  --dry-run             Fetch data but skip writing files
-  -h, --help            Print help
+  --output <DIR>                   Output directory              [default: dist]
+  --date <YYYY-MM-DD|YYYY-MM-DDTHH:MM>  Override snapshot datetime  [default: current UTC clock]
+  --dry-run                        Fetch data but skip writing files
+  -h, --help                       Print help
 ```
 
 ---
@@ -86,9 +86,21 @@ cargo run --release -- --output /tmp/my-output
 ```bash
 cargo run --release -- --date 2026-01-15
 ```
-The date only affects the `"date"` field written inside each JSON file.
-The actual rate data is always live (fetched right now). This flag is used
-by GitHub Actions to stamp each deployment with the correct date.
+Stamps each output file with `"date": "2026-01-15"`. No `timestamp` field is
+included — output is identical to the old format. Useful for backfills.
+
+### Sub-daily snapshot (date + timestamp)
+```bash
+cargo run --release -- --date 2026-03-07T14:30
+```
+Stamps output with both `"date": "2026-03-07"` and `"timestamp": "2026-03-07T14:30:00Z"`.
+This is the format used by `sub-daily.yml` in GitHub Actions.
+
+### No `--date` flag (default)
+```bash
+cargo run --release
+```
+Uses the current UTC clock. Produces both `date` and `timestamp` fields automatically.
 
 ### Enable debug logging
 ```bash
@@ -108,7 +120,7 @@ dist/
     ├── currencies.min.json      # same, minified
     ├── countries.json           # country data (copied from data/ if present)
     └── currencies/
-        ├── eur.json             # { "date": "...", "eur": { "usd": 1.08, ... } }
+        ├── eur.json             # { "date": "...", "timestamp": "...", "eur": { "usd": 1.08, ... } }
         ├── eur.min.json
         ├── usd.json
         ├── usd.min.json
