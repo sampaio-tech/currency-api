@@ -1,0 +1,89 @@
+name: Daily Rate Fetch & Deploy
+
+on:
+  schedule:
+    - cron: "0 0 * * *"   # Every day at 00:00 UTC
+  workflow_dispatch:        # Allow manual trigger from GitHub UI
+
+env:
+  RUST_LOG: fetcher=info
+  CARGO_TERM_COLOR: always
+
+jobs:
+  fetch-and-deploy:
+    name: Fetch rates and deploy to Cloudflare Pages
+    runs-on: ubuntu-latest
+
+    steps:
+      # ------------------------------------------------------------------ #
+      # 1. Source                                                            #
+      # ------------------------------------------------------------------ #
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ------------------------------------------------------------------ #
+      # 2. Rust toolchain                                                   #
+      # ------------------------------------------------------------------ #
+      - name: Install stable Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo registry and build artefacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      # ------------------------------------------------------------------ #
+      # 3. Build                                                            #
+      # ------------------------------------------------------------------ #
+      - name: Build release binary
+        run: cargo build --release --bin fetcher
+
+      # ------------------------------------------------------------------ #
+      # 4. Fetch rates                                                      #
+      # ------------------------------------------------------------------ #
+      - name: Get today's date
+        id: date
+        run: echo "value=$(date -u +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch exchange rates and generate static files
+        env:
+          FIAT_API_URL:   ${{ secrets.FIAT_API_URL }}
+          FIAT_API_KEY:   ${{ secrets.FIAT_API_KEY }}
+          CRYPTO_API_URL: ${{ secrets.CRYPTO_API_URL }}
+          CRYPTO_API_KEY: ${{ secrets.CRYPTO_API_KEY }}
+        run: ./target/release/fetcher --output dist/
+
+      # ------------------------------------------------------------------ #
+      # 5. Deploy — "latest" branch                                         #
+      # ------------------------------------------------------------------ #
+      - name: Deploy to Cloudflare Pages (latest)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken:  ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          command: >
+            pages deploy dist/
+            --project-name=currency-api
+            --branch=latest
+
+      # ------------------------------------------------------------------ #
+      # 6. Deploy — date-specific branch  (e.g. 2026-03-06)                #
+      # Cloudflare Pages maps branch names to subdomains automatically:    #
+      #   2026-03-06.currency-api.pages.dev                                #
+      # ------------------------------------------------------------------ #
+      - name: Deploy to Cloudflare Pages (${{ steps.date.outputs.value }})
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken:  ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          command: >
+            pages deploy dist/
+            --project-name=currency-api
+            --branch=${{ steps.date.outputs.value }}
