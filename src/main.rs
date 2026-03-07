@@ -4,7 +4,8 @@ mod normalize;
 mod sources;
 mod types;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
+use chrono::{NaiveDateTime, Utc};
 use clap::Parser;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -22,7 +23,8 @@ struct Cli {
     #[arg(long, default_value = "dist")]
     output: PathBuf,
 
-    /// Override today's date (format: YYYY-MM-DD). Defaults to the system date.
+    /// Override the snapshot datetime (YYYY-MM-DD or YYYY-MM-DDTHH:MM).
+    /// Defaults to the current UTC clock. Use YYYY-MM-DD for date-only output.
     #[arg(long)]
     date: Option<String>,
 
@@ -43,9 +45,27 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
     let cfg = config::Config::from_env();
 
-    let date = cli
-        .date
-        .unwrap_or_else(|| chrono::Local::now().format("%Y-%m-%d").to_string());
+    let (date, timestamp): (String, Option<String>) = match cli.date.as_deref() {
+        // --date YYYY-MM-DDTHH:MM  → full datetime → include timestamp field
+        Some(s) if s.contains('T') => {
+            let dt = NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M")
+                .with_context(|| format!("Invalid --date format: {s}. Use YYYY-MM-DD or YYYY-MM-DDTHH:MM"))?;
+            (
+                dt.format("%Y-%m-%d").to_string(),
+                Some(format!("{}Z", dt.format("%Y-%m-%dT%H:%M:%S"))),
+            )
+        }
+        // --date YYYY-MM-DD  → date only → no timestamp field (backward compat)
+        Some(s) => (s.to_string(), None),
+        // no flag → system clock UTC → include timestamp field
+        None => {
+            let now = Utc::now();
+            (
+                now.format("%Y-%m-%d").to_string(),
+                Some(now.format("%Y-%m-%dT%H:%M:%SZ").to_string()),
+            )
+        }
+    };
 
     info!("Date: {date}");
     info!("Output: {}", cli.output.display());
@@ -87,7 +107,7 @@ async fn main() -> Result<()> {
     }
 
     // --- Generate ---
-    generate::generate_all(&cli.output, &date, &eur_rates, &currency_list).await?;
+    generate::generate_all(&cli.output, &date, timestamp.as_deref(), &eur_rates, &currency_list).await?;
 
     Ok(())
 }
