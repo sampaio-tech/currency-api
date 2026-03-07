@@ -95,8 +95,14 @@ wrangler pages project create currency-api
 When asked for the production branch name, enter: `latest`
 
 > The project name `currency-api` will become part of your URL:
-> `latest.currency-api.pages.dev`
-> You can choose any name you want — just keep it consistent.
+> `currency-api.pages.dev` (production / latest rates)
+>
+> In Cloudflare Pages, the **production branch** is always served at the root domain
+> (`{project}.pages.dev`) — there is no `latest.` subdomain. Date and timestamp
+> snapshots are deployed as branch aliases and get their own subdomain automatically:
+> `2026-03-07.currency-api.pages.dev`, `2026-03-07t14-30.currency-api.pages.dev`, etc.
+>
+> You can choose any project name you want — just keep it consistent.
 
 ---
 
@@ -124,19 +130,49 @@ GitHub Actions needs these values to fetch rates and deploy.
 
 ## Step 6 — Trigger your first deployment
 
-The workflow runs automatically every day at 00:00 UTC. To run it right now:
+There are two workflows:
+
+| Workflow | File | Schedule | Purpose |
+|---|---|---|---|
+| **Daily Rate Fetch & Deploy** | `daily.yml` | Every day at 00:00 UTC | Date-only snapshots (`2026-03-07.…`) |
+| **Sub-daily Rate Fetch & Deploy** | `sub-daily.yml` | Every 30 minutes | Timestamp snapshots (`2026-03-07t14-30.…`) |
+
+To run either one right now:
 
 1. On GitHub, go to your repository
 2. Click **Actions** tab
-3. Click **"Daily Rate Fetch & Deploy"** in the left sidebar
+3. Click the workflow name in the left sidebar
 4. Click **"Run workflow"** → **"Run workflow"**
 
 Wait about 2–3 minutes. When it turns green, your API is live at:
 
 ```
-https://latest.currency-api.pages.dev/v1/currencies.json
-https://latest.currency-api.pages.dev/v1/currencies/usd.json
+https://currency-api.pages.dev/v1/currencies.json
+https://currency-api.pages.dev/v1/currencies/usd.json
 ```
+
+### Changing the sub-daily update frequency
+
+Open `.github/workflows/sub-daily.yml` and edit the `cron` expression on line 5:
+
+```yaml
+- cron: "0 * * * *"   # Every hour
+```
+
+**Free-tier budget** (both workflows combined, worst-case 31-day month):
+
+| Expression | Runs/month | Fiat requests | Fits 1 500 limit? |
+|---|---|---|---|
+| `0 * * * *` | ~775 | ~775 | ✅ Yes *(default)* |
+| `*/30 * * * *` | ~1 519 | ~1 519 | ❌ No (31-day months) |
+| `0 */2 * * *` | ~403 | ~403 | ✅ Yes |
+| `0 */6 * * *` | ~155 | ~155 | ✅ Yes |
+
+> Each run makes one fiat request (ExchangeRate-API, 1 500/month free) and one crypto
+> request (CoinGecko, 10 000/month free). The fiat limit is the bottleneck.
+> Every hour is the highest safe frequency on the free tier.
+>
+> GitHub Actions may delay scheduled runs by a few minutes under load — this is normal.
 
 ---
 
@@ -145,7 +181,7 @@ https://latest.currency-api.pages.dev/v1/currencies/usd.json
 Open your browser and visit:
 
 ```
-https://latest.currency-api.pages.dev/v1/currencies/eur.json
+https://currency-api.pages.dev/v1/currencies/eur.json
 ```
 
 You should see a JSON response with today's date and exchange rates.
