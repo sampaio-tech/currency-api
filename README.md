@@ -1,6 +1,6 @@
 # currency-api
 
-[![Sub-daily Rate Fetch & Deploy](https://github.com/sampaio-tech/currency-api/actions/workflows/sub-daily.yml/badge.svg)](https://github.com/sampaio-tech/currency-api/actions/workflows/sub-daily.yml) [![Daily Rate Fetch & Deploy](https://github.com/sampaio-tech/currency-api/actions/workflows/daily.yml/badge.svg)](https://github.com/sampaio-tech/currency-api/actions/workflows/daily.yml)
+[![Sub-daily Rate Fetch & Deploy](https://github.com/sampaio-tech/currency-api/actions/workflows/sub-daily.yml/badge.svg)](https://github.com/sampaio-tech/currency-api/actions/workflows/sub-daily.yml) [![Daily Rate Fetch & Deploy](https://github.com/sampaio-tech/currency-api/actions/workflows/daily.yml/badge.svg)](https://github.com/sampaio-tech/currency-api/actions/workflows/daily.yml) [![Deploy Currency Flags](https://github.com/sampaio-tech/currency-api/actions/workflows/flags-deploy.yml/badge.svg)](https://github.com/sampaio-tech/currency-api/actions/workflows/flags-deploy.yml) [![Deploy Currency Names (i18n)](https://github.com/sampaio-tech/currency-api/actions/workflows/i18n-deploy.yml/badge.svg)](https://github.com/sampaio-tech/currency-api/actions/workflows/i18n-deploy.yml) [![Deploy Currency Symbols](https://github.com/sampaio-tech/currency-api/actions/workflows/symbols-deploy.yml/badge.svg)](https://github.com/sampaio-tech/currency-api/actions/workflows/symbols-deploy.yml)
 
 A free, open-source currency exchange rate API — rebuilt in Rust.
 
