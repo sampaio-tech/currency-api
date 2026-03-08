@@ -44,11 +44,14 @@ Replace `{project}` with your Cloudflare Pages project name.
 | Rates for EUR (latest) | `https://{project}.pages.dev/v1/currencies/eur.json` |
 | Historical (date) | `https://2026-03-07.{project}.pages.dev/v1/currencies/usd.json` |
 | Historical (timestamp) | `https://2026-03-07t14-30.{project}.pages.dev/v1/currencies/usd.json` |
+| Currency symbols | `https://{project}.pages.dev/v1/currencies/symbols.json` |
+| Currency names (locale) | `https://{project}.pages.dev/v1/currencies/names/{locale}.json` |
+| Currency flag (SVG) | `https://{project}.pages.dev/v1/currencies/flags/{code}.svg` |
 
 > The production branch (`latest`) is served at the **root domain** `{project}.pages.dev`.
 > Date and timestamp snapshots get their own subdomain via Cloudflare Pages branch aliases.
 
-Every endpoint also has a minified version: replace `.json` with `.min.json`.
+Every exchange-rate endpoint also has a minified version: replace `.json` with `.min.json`.
 
 ### Response format
 
@@ -77,6 +80,31 @@ Every endpoint also has a minified version: replace `.json` with `.min.json`.
 
 The `timestamp` field is present on sub-daily runs. Date-only runs (e.g. `--date 2026-03-07`) omit it for backward compatibility.
 
+**`/v1/currencies/symbols.json`**
+```json
+{
+  "BRL": "R$",
+  "EUR": "€",
+  "GBP": "£",
+  "USD": "$"
+}
+```
+
+See [docs/CURRENCY-SYMBOLS.md](./docs/CURRENCY-SYMBOLS.md) for the full endpoint reference and update instructions.
+
+**`/v1/currencies/names/{locale}.json`**
+```json
+{
+  "BRL": "Brazilian Real",
+  "EUR": "Euro",
+  "USD": "US Dollar"
+}
+```
+
+566 locales available (e.g. `en`, `pt_BR`, `zh`, `ar`). See [docs/CURRENCY-NAMES.md](./docs/CURRENCY-NAMES.md) for the full reference.
+
+**`/v1/currencies/flags/{code}.svg`** — returns an SVG image. 1214 files covering fiat currencies and crypto tokens (lowercase codes). See [docs/CURRENCY-FLAGS.md](./docs/CURRENCY-FLAGS.md) for the full reference.
+
 ---
 
 ## Project structure
@@ -93,15 +121,27 @@ currency-api/
 │       ├── fiat.rs      # fetches fiat rates (exchangerate-api.com v6 / open.er-api.com)
 │       └── crypto.rs    # fetches crypto rates (CoinGecko)
 ├── data/
-│   ├── currencies.json  # master list: currency code → name
-│   └── crypto_ids.json  # maps currency code → CoinGecko ID
+│   ├── currencies.json           # master list: currency code → name
+│   ├── crypto_ids.json           # maps currency code → CoinGecko ID
+│   ├── currency-symbols/
+│   │   └── currency_symbols.json # ISO 4217 code → display symbol (~170 currencies)
+│   ├── currency-names/
+│   │   └── {locale}.json         # localized currency names (566 locales)
+│   └── currency-flags/
+│       └── {code}.svg            # currency/crypto flag SVGs (1214 files)
 ├── docs/
-│   ├── CLI.md           # how the CLI works, all flags, data flow
-│   └── SETUP.md         # step-by-step deployment guide
+│   ├── CLI.md                    # how the CLI works, all flags, data flow
+│   ├── SETUP.md                  # step-by-step deployment guide
+│   ├── CURRENCY-SYMBOLS.md       # symbols endpoint reference
+│   ├── CURRENCY-NAMES.md         # i18n names endpoint reference
+│   └── CURRENCY-FLAGS.md         # flag SVGs endpoint reference
 ├── .github/
 │   └── workflows/
-│       ├── daily.yml        # runs every day at 00:00 UTC (date snapshots)
-│       └── sub-daily.yml    # runs every 30 min (timestamp snapshots, configurable)
+│       ├── daily.yml             # runs every day at 00:00 UTC (date snapshots)
+│       ├── sub-daily.yml         # runs every 30 min (timestamp snapshots, configurable)
+│       ├── symbols-deploy.yml    # manual: publishes currency symbols to CDN
+│       ├── i18n-deploy.yml       # manual: publishes currency name translations to CDN
+│       └── flags-deploy.yml      # manual: publishes currency flag SVGs to CDN
 └── Cargo.toml
 ```
 
