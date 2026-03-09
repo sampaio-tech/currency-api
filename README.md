@@ -133,9 +133,15 @@ currency-api/
 ├── docs/
 │   ├── CLI.md                    # how the CLI works, all flags, data flow
 │   ├── SETUP.md                  # step-by-step deployment guide
+│   ├── BRUNO.md                  # Bruno API collection guide
 │   ├── CURRENCY-SYMBOLS.md       # symbols endpoint reference
 │   ├── CURRENCY-NAMES.md         # i18n names endpoint reference
 │   └── CURRENCY-FLAGS.md         # flag SVGs endpoint reference
+├── bruno/
+│   ├── environments/             # Production, Date Snapshot, Timestamp Snapshot, Local
+│   ├── Rates/                    # exchange rate requests (pretty + minified)
+│   ├── Static/                   # symbols, names, flags
+│   └── Historical/               # date and timestamp snapshot requests
 ├── .github/
 │   └── workflows/
 │       ├── daily.yml             # manual: date snapshots (run from Actions tab)
@@ -143,6 +149,24 @@ currency-api/
 │       └── static-deploy.yml     # manual: publishes flags, names, and symbols to CDN
 └── Cargo.toml
 ```
+
+---
+
+## Testing with Bruno
+
+A [Bruno](https://www.usebruno.com/) collection in `bruno/` covers every endpoint with assertions.
+
+```
+bruno/
+├── Rates/      — all currencies index, USD/EUR/BTC rates (pretty + minified)
+├── Static/     — symbols, names (en/pt_BR/zh), flags (USD/EUR/BTC)
+└── Historical/ — USD/EUR by date and by timestamp
+```
+
+**4 environments**: Production, Date Snapshot, Timestamp Snapshot, Local.
+Switch the snapshot target by editing `dateBaseUrl` / `timestampBaseUrl` in the environment file.
+
+See [docs/BRUNO.md](./docs/BRUNO.md) for full setup and local testing instructions.
 
 ---
 
