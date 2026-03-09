@@ -139,7 +139,7 @@ currency-api/
 ├── .github/
 │   └── workflows/
 │       ├── daily.yml             # manual: date snapshots (run from Actions tab)
-│       ├── sub-daily.yml         # schedule: runs every hour (configurable), no manual trigger
+│       ├── sub-daily.yml         # schedule: runs every hour (configurable), manual trigger allowed
 │       └── static-deploy.yml     # manual: publishes flags, names, and symbols to CDN
 └── Cargo.toml
 ```
@@ -206,7 +206,7 @@ See [docs/SETUP.md](./docs/SETUP.md) for a full step-by-step guide on how to:
 
 ## Update frequency
 
-The sub-daily workflow (`sub-daily.yml`) runs every hour by default and is **schedule-only** — there is no manual trigger, to prevent accidental API quota usage. To change the frequency, edit the `cron` expression in `.github/workflows/sub-daily.yml`:
+The sub-daily workflow (`sub-daily.yml`) runs every hour by default and also supports manual triggers from the Actions tab. To change the frequency, edit the `cron` expression in `.github/workflows/sub-daily.yml`:
 
 ```yaml
 - cron: "0 * * * *"   # Every hour

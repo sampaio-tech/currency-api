@@ -148,7 +148,7 @@ There are two workflows:
 | Workflow | File | Schedule | Manual trigger? |
 |---|---|---|---|
 | **Daily Rate Fetch & Deploy** | `daily.yml` | No — manual only | Yes |
-| **Sub-daily Rate Fetch & Deploy** | `sub-daily.yml` | Every hour *(configurable)* | No — schedule only |
+| **Sub-daily Rate Fetch & Deploy** | `sub-daily.yml` | Every hour *(configurable)* | Yes |
 
 To trigger the **daily** workflow right now:
 

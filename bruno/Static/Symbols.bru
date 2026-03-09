@@ -1,0 +1,27 @@
+meta {
+  name: Currency Symbols
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/currencies/symbols.json
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("has USD symbol", function() {
+    expect(res.body).to.have.property("USD");
+  });
+  test("has EUR symbol", function() {
+    expect(res.body).to.have.property("EUR");
+  });
+  test("USD symbol is $", function() {
+    expect(res.body["USD"]).to.equal("$");
+  });
+}

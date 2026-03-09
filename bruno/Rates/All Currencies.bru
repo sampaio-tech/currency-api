@@ -1,0 +1,27 @@
+meta {
+  name: All Currencies
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/currencies.json
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("has usd entry", function() {
+    expect(res.body).to.have.property("usd");
+  });
+  test("has eur entry", function() {
+    expect(res.body).to.have.property("eur");
+  });
+  test("has btc entry", function() {
+    expect(res.body).to.have.property("btc");
+  });
+}

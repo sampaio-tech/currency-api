@@ -1,0 +1,28 @@
+meta {
+  name: USD Rates by Date
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{dateBaseUrl}}/v1/currencies/usd.json
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("has date field", function() {
+    expect(res.body).to.have.property("date");
+  });
+  test("has no timestamp field (date-only snapshot)", function() {
+    expect(res.body).to.not.have.property("timestamp");
+  });
+  test("has usd rates object", function() {
+    expect(res.body).to.have.property("usd");
+    expect(res.body.usd).to.be.an("object");
+  });
+}

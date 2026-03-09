@@ -1,0 +1,15 @@
+meta {
+  name: USD Rates (minified)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/v1/currencies/usd.min.json
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}

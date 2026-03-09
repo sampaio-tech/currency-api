@@ -1,0 +1,31 @@
+meta {
+  name: USD Rates
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/v1/currencies/usd.json
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("has date field", function() {
+    expect(res.body).to.have.property("date");
+  });
+  test("has usd rates object", function() {
+    expect(res.body).to.have.property("usd");
+    expect(res.body.usd).to.be.an("object");
+  });
+  test("has eur rate", function() {
+    expect(res.body.usd).to.have.property("eur");
+  });
+  test("has btc rate", function() {
+    expect(res.body.usd).to.have.property("btc");
+  });
+}

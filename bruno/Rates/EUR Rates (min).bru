@@ -1,0 +1,15 @@
+meta {
+  name: EUR Rates (minified)
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/v1/currencies/eur.min.json
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}

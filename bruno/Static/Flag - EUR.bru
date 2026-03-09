@@ -1,0 +1,15 @@
+meta {
+  name: Flag - EUR
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/v1/currencies/flags/eur.svg
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}

@@ -1,0 +1,21 @@
+meta {
+  name: Currency Names (zh)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/v1/currencies/names/zh.json
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("has USD name", function() {
+    expect(res.body).to.have.property("USD");
+  });
+}

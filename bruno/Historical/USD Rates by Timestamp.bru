@@ -1,0 +1,28 @@
+meta {
+  name: USD Rates by Timestamp
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{timestampBaseUrl}}/v1/currencies/usd.json
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("has date field", function() {
+    expect(res.body).to.have.property("date");
+  });
+  test("has timestamp field (sub-daily snapshot)", function() {
+    expect(res.body).to.have.property("timestamp");
+  });
+  test("has usd rates object", function() {
+    expect(res.body).to.have.property("usd");
+    expect(res.body.usd).to.be.an("object");
+  });
+}

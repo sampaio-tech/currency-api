@@ -1,0 +1,28 @@
+meta {
+  name: EUR Rates
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/v1/currencies/eur.json
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("has date field", function() {
+    expect(res.body).to.have.property("date");
+  });
+  test("has eur rates object", function() {
+    expect(res.body).to.have.property("eur");
+    expect(res.body.eur).to.be.an("object");
+  });
+  test("has usd rate", function() {
+    expect(res.body.eur).to.have.property("usd");
+  });
+}

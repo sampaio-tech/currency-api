@@ -1,0 +1,28 @@
+meta {
+  name: BTC Rates
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/v1/currencies/btc.json
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("has date field", function() {
+    expect(res.body).to.have.property("date");
+  });
+  test("has btc rates object", function() {
+    expect(res.body).to.have.property("btc");
+    expect(res.body.btc).to.be.an("object");
+  });
+  test("has usd rate", function() {
+    expect(res.body.btc).to.have.property("usd");
+  });
+}

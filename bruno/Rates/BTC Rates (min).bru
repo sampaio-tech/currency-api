@@ -1,0 +1,15 @@
+meta {
+  name: BTC Rates (minified)
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/v1/currencies/btc.min.json
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}

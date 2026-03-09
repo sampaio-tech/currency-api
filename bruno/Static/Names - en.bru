@@ -1,0 +1,27 @@
+meta {
+  name: Currency Names (en)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/v1/currencies/names/en.json
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("has USD name", function() {
+    expect(res.body).to.have.property("USD");
+  });
+  test("has EUR name", function() {
+    expect(res.body).to.have.property("EUR");
+  });
+  test("USD is US Dollar", function() {
+    expect(res.body["USD"]).to.equal("US Dollar");
+  });
+}

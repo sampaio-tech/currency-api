@@ -1,0 +1,15 @@
+meta {
+  name: Flag - USD
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/v1/currencies/flags/usd.svg
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
