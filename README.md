@@ -18,17 +18,18 @@ See [docs/SETUP.md](./docs/SETUP.md) to get started.
 ## How it works
 
 ```
-GitHub Actions (every 30 min — configurable)
-    │
+sub-daily.yml (every hour, schedule)   daily.yml (manual, from Actions tab)
+    │                                       │
     ├── fetches fiat rates   (exchangerate-api.com v6 or open.er-api.com)
     ├── fetches crypto rates (CoinGecko)
     │
     ├── computes cross rates for every currency
     ├── writes static JSON files to dist/
+    ├── bundles flags, names, symbols from data/ into dist/
     │
     ├── deploys to Cloudflare Pages → your-project.pages.dev          (production / latest)
     ├── deploys to Cloudflare Pages → {YYYY-MM-DD}.your-project.pages.dev
-    └── deploys to Cloudflare Pages → {YYYY-MM-DDtHH-MM}.your-project.pages.dev
+    └── [sub-daily only] → {YYYY-MM-DDtHH-MM}.your-project.pages.dev
 ```
 
 ---
@@ -137,7 +138,7 @@ currency-api/
 │   └── CURRENCY-FLAGS.md         # flag SVGs endpoint reference
 ├── .github/
 │   └── workflows/
-│       ├── daily.yml             # schedule: runs every day at 00:00 UTC, manual trigger allowed
+│       ├── daily.yml             # manual: date snapshots (run from Actions tab)
 │       ├── sub-daily.yml         # schedule: runs every hour (configurable), no manual trigger
 │       └── static-deploy.yml     # manual: publishes flags, names, and symbols to CDN
 └── Cargo.toml
@@ -205,13 +206,13 @@ See [docs/SETUP.md](./docs/SETUP.md) for a full step-by-step guide on how to:
 
 ## Update frequency
 
-The sub-daily workflow (`sub-daily.yml`) runs every hour by default and is **schedule-only** (no manual trigger). To change it, edit the `cron` expression in `.github/workflows/sub-daily.yml`:
+The sub-daily workflow (`sub-daily.yml`) runs every hour by default and is **schedule-only** — there is no manual trigger, to prevent accidental API quota usage. To change the frequency, edit the `cron` expression in `.github/workflows/sub-daily.yml`:
 
 ```yaml
 - cron: "0 * * * *"   # Every hour
 ```
 
-**Free-tier budget** (both workflows combined, worst-case 31-day month):
+**Free-tier budget** (sub-daily only, worst-case 31-day month — daily is manual so not counted):
 
 | Expression | Runs/month | Fiat requests | Fits 1 500 limit? |
 |---|---|---|---|
@@ -224,4 +225,4 @@ The sub-daily workflow (`sub-daily.yml`) runs every hour by default and is **sch
 > (10 000/month free). The fiat limit is the bottleneck — every-hour is the highest
 > frequency that stays safely within the free tier.
 
-The daily workflow (`daily.yml`) continues to run independently at 00:00 UTC and produces date-only snapshots (no `timestamp` field) for full backward compatibility.
+The daily workflow (`daily.yml`) is **manual-only** and produces date snapshots without a `timestamp` field.
