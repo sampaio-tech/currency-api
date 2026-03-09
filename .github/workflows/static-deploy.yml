@@ -1,11 +1,11 @@
-name: Deploy Currency Flags
+name: Deploy Static Data
 
 on:
   workflow_dispatch:   # Manual trigger only
 
 jobs:
   deploy:
-    name: Publish currency flag SVGs to Cloudflare Pages
+    name: Publish flags, names, and symbols to Cloudflare Pages
     runs-on: ubuntu-latest
 
     steps:
@@ -15,7 +15,10 @@ jobs:
       - name: Build dist
         run: |
           mkdir -p dist/v1/currencies/flags
+          mkdir -p dist/v1/currencies/names
           cp data/currency-flags/*.svg dist/v1/currencies/flags/
+          cp data/currency-names/*.json dist/v1/currencies/names/
+          cp data/currency-symbols/currency_symbols.json dist/v1/currencies/symbols.json
 
       - name: Deploy to Cloudflare Pages (latest)
         uses: cloudflare/wrangler-action@v3

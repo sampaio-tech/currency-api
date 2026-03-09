@@ -100,7 +100,7 @@ When asked for the production branch name, enter: `latest`
 > In Cloudflare Pages, the **production branch** is always served at the root domain
 > (`{project}.pages.dev`) — there is no `latest.` subdomain. Date and timestamp
 > snapshots are deployed as branch aliases and get their own subdomain automatically:
-> `2026-03-07.currency-api.pages.dev`, `2026-03-07t14-30.currency-api.pages.dev`, etc.
+> `{YYYY-MM-DD}.currency-api.pages.dev`, `{YYYY-MM-DDtHH-MM}.currency-api.pages.dev`, etc.
 >
 > You can choose any project name you want — just keep it consistent.
 
@@ -128,20 +128,33 @@ GitHub Actions needs these values to fetch rates and deploy.
 
 ---
 
-## Step 6 — Trigger your first deployment
+## Step 6 — Deploy static data (once)
+
+Before the scheduled workflows run, you need to publish the static files (flags, names, symbols) to Cloudflare Pages:
+
+1. On GitHub, go to your repository
+2. Click the **Actions** tab
+3. Click **"Deploy Static Data"** in the left sidebar
+4. Click **"Run workflow"** → **"Run workflow"**
+
+Wait about 1–2 minutes. This only needs to be done once (or whenever you update the files in `data/`).
+
+---
+
+## Step 7 — Wait for the schedule (or trigger daily manually)
 
 There are two workflows:
 
-| Workflow | File | Schedule | Purpose |
+| Workflow | File | Schedule | Manual trigger? |
 |---|---|---|---|
-| **Daily Rate Fetch & Deploy** | `daily.yml` | Every day at 00:00 UTC | Date-only snapshots (`2026-03-07.…`) |
-| **Sub-daily Rate Fetch & Deploy** | `sub-daily.yml` | Every 30 minutes | Timestamp snapshots (`2026-03-07t14-30.…`) |
+| **Daily Rate Fetch & Deploy** | `daily.yml` | Every day at 00:00 UTC | Yes |
+| **Sub-daily Rate Fetch & Deploy** | `sub-daily.yml` | Every hour *(configurable)* | No — schedule only |
 
-To run either one right now:
+To trigger the **daily** workflow right now:
 
 1. On GitHub, go to your repository
 2. Click **Actions** tab
-3. Click the workflow name in the left sidebar
+3. Click **"Daily Rate Fetch & Deploy"** in the left sidebar
 4. Click **"Run workflow"** → **"Run workflow"**
 
 Wait about 2–3 minutes. When it turns green, your API is live at:
@@ -153,7 +166,7 @@ https://currency-api.pages.dev/v1/currencies/usd.json
 
 ### Changing the sub-daily update frequency
 
-Open `.github/workflows/sub-daily.yml` and edit the `cron` expression on line 5:
+Open `.github/workflows/sub-daily.yml` and edit the `cron` expression on line 4:
 
 ```yaml
 - cron: "0 * * * *"   # Every hour
@@ -176,7 +189,7 @@ Open `.github/workflows/sub-daily.yml` and edit the `cron` expression on line 5:
 
 ---
 
-## Step 7 — Verify it works
+## Step 8 — Verify it works
 
 Open your browser and visit:
 

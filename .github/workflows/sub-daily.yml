@@ -3,7 +3,6 @@ name: Sub-daily Rate Fetch & Deploy
 on:
   schedule:
     - cron: "0 * * * *"   # Every hour — edit this expression to change frequency
-  workflow_dispatch:          # Allow manual trigger from GitHub UI
 
 env:
   RUST_LOG: fetcher=info
@@ -64,7 +63,19 @@ jobs:
         run: ./target/release/fetcher --output dist/ --date "${{ steps.snapshot.outputs.iso }}"
 
       # ------------------------------------------------------------------ #
-      # 5. Deploy — "latest" branch                                         #
+      # 5. Bundle static data (flags, names, symbols) into dist/           #
+      # These files live in data/ and do not change per run.               #
+      # ------------------------------------------------------------------ #
+      - name: Bundle static data into dist/
+        run: |
+          mkdir -p dist/v1/currencies/flags
+          mkdir -p dist/v1/currencies/names
+          cp data/currency-flags/*.svg dist/v1/currencies/flags/
+          cp data/currency-names/*.json dist/v1/currencies/names/
+          cp data/currency-symbols/currency_symbols.json dist/v1/currencies/symbols.json
+
+      # ------------------------------------------------------------------ #
+      # 6. Deploy — "latest" branch                                         #
       # ------------------------------------------------------------------ #
       - name: Deploy to Cloudflare Pages (latest)
         uses: cloudflare/wrangler-action@v3
@@ -77,7 +88,7 @@ jobs:
             --branch=latest
 
       # ------------------------------------------------------------------ #
-      # 6. Deploy — date-specific branch  (e.g. 2026-03-07)                #
+      # 7. Deploy — date-specific branch  (e.g. 2026-03-07)                #
       # Cloudflare Pages maps branch names to subdomains automatically:    #
       #   2026-03-07.currency-api.pages.dev                                #
       # ------------------------------------------------------------------ #
@@ -92,7 +103,7 @@ jobs:
             --branch=${{ steps.snapshot.outputs.date }}
 
       # ------------------------------------------------------------------ #
-      # 7. Deploy — timestamp-specific branch  (e.g. 2026-03-07t14-30)     #
+      # 8. Deploy — timestamp-specific branch  (e.g. 2026-03-07t14-30)     #
       # ------------------------------------------------------------------ #
       - name: Deploy to Cloudflare Pages (${{ steps.snapshot.outputs.branch }})
         uses: cloudflare/wrangler-action@v3

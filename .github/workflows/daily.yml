@@ -61,7 +61,19 @@ jobs:
         run: ./target/release/fetcher --output dist/
 
       # ------------------------------------------------------------------ #
-      # 5. Deploy — "latest" branch                                         #
+      # 5. Bundle static data (flags, names, symbols) into dist/           #
+      # These files live in data/ and do not change per run.               #
+      # ------------------------------------------------------------------ #
+      - name: Bundle static data into dist/
+        run: |
+          mkdir -p dist/v1/currencies/flags
+          mkdir -p dist/v1/currencies/names
+          cp data/currency-flags/*.svg dist/v1/currencies/flags/
+          cp data/currency-names/*.json dist/v1/currencies/names/
+          cp data/currency-symbols/currency_symbols.json dist/v1/currencies/symbols.json
+
+      # ------------------------------------------------------------------ #
+      # 6. Deploy — "latest" branch                                         #
       # ------------------------------------------------------------------ #
       - name: Deploy to Cloudflare Pages (latest)
         uses: cloudflare/wrangler-action@v3
@@ -74,7 +86,7 @@ jobs:
             --branch=latest
 
       # ------------------------------------------------------------------ #
-      # 6. Deploy — date-specific branch  (e.g. 2026-03-06)                #
+      # 7. Deploy — date-specific branch  (e.g. 2026-03-06)                #
       # Cloudflare Pages maps branch names to subdomains automatically:    #
       #   2026-03-06.currency-api.pages.dev                                #
       # ------------------------------------------------------------------ #
