@@ -19,6 +19,13 @@ pub struct Config {
 
     /// Optional API key sent as `x-cg-demo-api-key` header.
     pub crypto_api_key: Option<String>,
+
+    /// URL for the precious metals endpoint (metalpriceapi.com-compatible).
+    /// Default: https://api.metalpriceapi.com/v1/latest?base=EUR&currencies=XAU,XAG,XPT,XPD
+    pub metals_api_url: String,
+
+    /// API key sent as `X-API-KEY` header. If absent, metals are skipped.
+    pub metals_api_key: Option<String>,
 }
 
 impl Config {
@@ -43,6 +50,11 @@ impl Config {
                 "https://api.coingecko.com/api/v3/simple/price".to_string()
             }),
             crypto_api_key: std::env::var("CRYPTO_API_KEY").ok(),
+            metals_api_url: std::env::var("METALS_API_URL").unwrap_or_else(|_| {
+                "https://api.metalpriceapi.com/v1/latest?base=EUR&currencies=XAU,XAG,XPT,XPD"
+                    .to_string()
+            }),
+            metals_api_key: std::env::var("METALS_API_KEY").ok(),
         }
     }
 }

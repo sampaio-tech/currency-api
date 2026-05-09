@@ -47,7 +47,22 @@ https://v6.exchangerate-api.com/v6/YOUR_API_KEY/latest/EUR
 
 ---
 
-## Step 3 — Get your CoinGecko API key (optional but recommended)
+## Step 3 — Get your MetalpriceAPI key (optional — for precious metals)
+
+[metalpriceapi.com](https://metalpriceapi.com) provides precious metal rates (XAU, XAG, XPT, XPD).
+The free tier includes 100 requests/month — enough for the default schedule (every 8 hours, ~93 req/month).
+
+1. Go to https://metalpriceapi.com
+2. Click **"Get Free API Key"**
+3. Sign up with your email
+4. Copy the API key from your dashboard — you will need it in Step 5
+
+> If you skip this step, precious metals (XAU, XAG, XPT, XPD) will be omitted from the output.
+> All other currencies (fiat and crypto) are unaffected.
+
+---
+
+## Step 4 — Get your CoinGecko API key (optional but recommended)
 
 CoinGecko provides crypto prices. The free tier works without a key, but
 adding one gives you higher rate limits and more reliability.
@@ -62,7 +77,7 @@ adding one gives you higher rate limits and more reliability.
 
 ---
 
-## Step 4 — Create your Cloudflare Pages project
+## Step 5 — Create your Cloudflare Pages project
 
 Cloudflare Pages will host all the generated JSON files for free.
 
@@ -106,7 +121,7 @@ When asked for the production branch name, enter: `latest`
 
 ---
 
-## Step 5 — Add secrets to your GitHub repository
+## Step 6 — Add secrets to your GitHub repository
 
 GitHub Actions needs these values to fetch rates and deploy.
 
@@ -116,19 +131,24 @@ GitHub Actions needs these values to fetch rates and deploy.
 
 | Secret name      | Value                                                              |
 |------------------|--------------------------------------------------------------------|
-| `CF_API_TOKEN`   | The Cloudflare API token from Step 4b                             |
-| `CF_ACCOUNT_ID`  | Your Cloudflare Account ID from Step 4a                           |
-| `FIAT_API_URL`   | `https://v6.exchangerate-api.com/v6/YOUR_API_KEY/latest/EUR`      |
-| `FIAT_API_KEY`   | *(leave empty or skip if using the URL above with key embedded)*  |
-| `CRYPTO_API_URL` | `https://api.coingecko.com/api/v3/simple/price`                   |
-| `CRYPTO_API_KEY` | Your CoinGecko Demo API key from Step 3 *(optional)*              |
+| `CF_API_TOKEN`   | The Cloudflare API token from Step 5b                             |
+| `CF_ACCOUNT_ID`  | Your Cloudflare Account ID from Step 5a                           |
+| `FIAT_API_URL`   | `https://v6.exchangerate-api.com/v6/{key}/latest/EUR` *(optional — see note below)* |
+| `FIAT_API_KEY`   | Your ExchangeRate-API key *(required if using the URL above)*     |
+| `CRYPTO_API_URL` | `https://api.coingecko.com/api/v3/simple/price` *(optional)*      |
+| `CRYPTO_API_KEY` | Your CoinGecko Demo API key from Step 4 *(optional)*              |
+| `METALS_API_KEY` | Your MetalpriceAPI key from Step 3 *(optional — omit to skip metals)* |
 
-> For `FIAT_API_URL`, just embed the key directly in the URL as shown.
-> You don't need to set `FIAT_API_KEY` separately.
+> **Fiat API:** If you don't set `FIAT_API_URL`, the default (`open.er-api.com`) is used — no key needed.
+> To use ExchangeRate-API instead, set `FIAT_API_URL` to the `{key}` template above and set `FIAT_API_KEY`
+> to your key. The `{key}` placeholder will be substituted at runtime; the key is never sent as a header.
+>
+> **Metals API:** `METALS_API_URL` has a sensible default — you only need to set `METALS_API_KEY`.
+> If omitted, XAU/XAG/XPT/XPD are silently skipped.
 
 ---
 
-## Step 6 — Deploy static data (once)
+## Step 7 — Deploy static data (once)
 
 Before the scheduled workflows run, you need to publish the static files (flags, names, symbols) to Cloudflare Pages:
 
@@ -141,14 +161,14 @@ Wait about 1–2 minutes. This only needs to be done once (or whenever you updat
 
 ---
 
-## Step 7 — Wait for the schedule (or trigger daily manually)
+## Step 8 — Wait for the schedule (or trigger daily manually)
 
 There are two workflows:
 
 | Workflow | File | Schedule | Manual trigger? |
 |---|---|---|---|
 | **Daily Rate Fetch & Deploy** | `daily.yml` | No — manual only | Yes |
-| **Sub-daily Rate Fetch & Deploy** | `sub-daily.yml` | Every hour *(configurable)* | Yes |
+| **Sub-daily Rate Fetch & Deploy** | `sub-daily.yml` | Every 8 hours *(configurable)* | Yes |
 
 To trigger the **daily** workflow right now:
 
@@ -166,30 +186,32 @@ https://currency-api.pages.dev/v1/currencies/usd.json
 
 ### Changing the sub-daily update frequency
 
-Open `.github/workflows/sub-daily.yml` and edit the `cron` expression on line 4:
+Open `.github/workflows/sub-daily.yml` and edit the `cron` expression:
 
 ```yaml
-- cron: "0 * * * *"   # Every hour
+- cron: "0 */8 * * *"  # Every 8 hours (3×/day)
 ```
 
-**Free-tier budget** (both workflows combined, worst-case 31-day month):
+**Free-tier budget** (sub-daily only, worst-case 31-day month — daily is manual):
 
-| Expression | Runs/month | Fiat requests | Fits 1 500 limit? |
-|---|---|---|---|
-| `0 * * * *` | ~775 | ~775 | ✅ Yes *(default)* |
-| `*/30 * * * *` | ~1 519 | ~1 519 | ❌ No (31-day months) |
-| `0 */2 * * *` | ~403 | ~403 | ✅ Yes |
-| `0 */6 * * *` | ~155 | ~155 | ✅ Yes |
+| Expression | Runs/month | Fiat | Crypto | Metals | Fits all free limits? |
+|---|---|---|---|---|---|
+| `0 */8 * * *` | ~93 | ~93 | ~93 | ~93 | ✅ Yes *(default)* |
+| `0 */6 * * *` | ~124 | ~124 | ~124 | ~124 | ✅ Yes |
+| `0 */4 * * *` | ~186 | ~186 | ~186 | ~186 | ✅ Yes |
+| `0 */2 * * *` | ~372 | ~372 | ~372 | ~372 | ✅ Yes |
+| `0 * * * *` | ~744 | ~744 | ~744 | ~744 | ❌ Exceeds metals limit (100/month) |
 
-> Each run makes one fiat request (ExchangeRate-API, 1 500/month free) and one crypto
-> request (CoinGecko, 10 000/month free). The fiat limit is the bottleneck.
-> Every hour is the highest safe frequency on the free tier.
+> Free-tier limits: fiat (open.er-api.com) — unlimited; CoinGecko — 10 000/month;
+> metalpriceapi.com — 100/month. The metals limit is the bottleneck.
+>
+> If `METALS_API_KEY` is not set, metals are skipped and you can safely run more frequently.
 >
 > GitHub Actions may delay scheduled runs by a few minutes under load — this is normal.
 
 ---
 
-## Step 8 — Verify it works
+## Step 9 — Verify it works
 
 Open your browser and visit:
 
@@ -235,16 +257,15 @@ source .env && cargo run -- --dry-run
 
 For CI, set these as GitHub repository secrets (Settings → Secrets → Actions):
 
-| Variable         | Required | Default                                         | Description                                              |
-|------------------|----------|-------------------------------------------------|----------------------------------------------------------|
-| `FIAT_API_URL`   | No       | `https://open.er-api.com/v6/latest/EUR`         | EUR-based fiat endpoint — **must use `/latest/EUR`**     |
-| `FIAT_API_KEY`   | No       | *(none)*                                        | Bearer token for fiat source                             |
-| `CRYPTO_API_URL` | No       | `https://api.coingecko.com/api/v3/simple/price` | CoinGecko-compatible price endpoint                      |
-| `CRYPTO_API_KEY` | No       | *(none)*                                        | `x-cg-demo-api-key` header value                         |
-| `CF_API_TOKEN`   | Yes*     | *(none)*                                        | Cloudflare API token for deployment                      |
-| `CF_ACCOUNT_ID`  | Yes*     | *(none)*                                        | Cloudflare account ID                                    |
+| Variable          | Required | Default                                                                      | Description                                              |
+|-------------------|----------|------------------------------------------------------------------------------|----------------------------------------------------------|
+| `FIAT_API_URL`    | No       | `https://open.er-api.com/v6/latest/EUR`                                      | EUR-based fiat endpoint. Supports `{key}` placeholder for exchangerate-api.com (e.g. `https://v6.exchangerate-api.com/v6/{key}/latest/EUR`). Must use EUR as base. |
+| `FIAT_API_KEY`    | No       | *(none)*                                                                     | Substituted into `{key}` in `FIAT_API_URL`, or sent as Bearer header if no placeholder is present |
+| `CRYPTO_API_URL`  | No       | `https://api.coingecko.com/api/v3/simple/price`                              | CoinGecko-compatible price endpoint                      |
+| `CRYPTO_API_KEY`  | No       | *(none)*                                                                     | `x-cg-demo-api-key` header value                         |
+| `METALS_API_URL`  | No       | `https://api.metalpriceapi.com/v1/latest?base=EUR&currencies=XAU,XAG,XPT,XPD` | Precious metals endpoint (metalpriceapi.com-compatible)  |
+| `METALS_API_KEY`  | No       | *(none)*                                                                     | `X-API-KEY` header value. If not set, metals are skipped |
+| `CF_API_TOKEN`    | Yes*     | *(none)*                                                                     | Cloudflare API token for deployment                      |
+| `CF_ACCOUNT_ID`   | Yes*     | *(none)*                                                                     | Cloudflare account ID                                    |
 
 *Required only in GitHub Actions for deployment. Not needed for local runs.
-
-> **Important:** `FIAT_API_URL` must always use EUR as the base currency (e.g. `/latest/EUR`).
-> Using a different base (e.g. `/latest/USD`) will produce incorrect cross rates.

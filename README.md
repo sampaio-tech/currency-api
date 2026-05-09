@@ -18,12 +18,13 @@ See [docs/SETUP.md](./docs/SETUP.md) to get started.
 ## How it works
 
 ```
-sub-daily.yml (every hour, schedule)   daily.yml (manual, from Actions tab)
+sub-daily.yml (every 8 h, schedule)    daily.yml (manual, from Actions tab)
     │                                       │
-    ├── fetches fiat rates   (exchangerate-api.com v6 or open.er-api.com)
-    ├── fetches crypto rates (CoinGecko)
+    ├── fetches fiat rates    (exchangerate-api.com v6 or open.er-api.com)
+    ├── fetches crypto rates  (CoinGecko)
+    ├── fetches metal rates   (metalpriceapi.com — XAU, XAG, XPT, XPD)
     │
-    ├── computes cross rates for every currency
+    ├── computes cross rates for every currency pair
     ├── writes static JSON files to dist/
     ├── bundles flags, names, symbols from data/ into dist/
     │
@@ -120,7 +121,8 @@ currency-api/
 │   ├── generate.rs      # writes the dist/ file tree
 │   └── sources/
 │       ├── fiat.rs      # fetches fiat rates (exchangerate-api.com v6 / open.er-api.com)
-│       └── crypto.rs    # fetches crypto rates (CoinGecko)
+│       ├── crypto.rs    # fetches crypto rates (CoinGecko)
+│       └── metals.rs    # fetches precious metal rates (metalpriceapi.com)
 ├── data/
 │   ├── currencies.json           # master list: currency code → name
 │   ├── crypto_ids.json           # maps currency code → CoinGecko ID
@@ -195,7 +197,7 @@ See [docs/CLI.md](./docs/CLI.md) for all flags and examples.
    npm install -g wrangler && wrangler login
    wrangler pages project create currency-api
    ```
-3. **Add GitHub secrets**: `CF_API_TOKEN`, `CF_ACCOUNT_ID`, `FIAT_API_URL`, `CRYPTO_API_URL` (and optionally `FIAT_API_KEY`, `CRYPTO_API_KEY`)
+3. **Add GitHub secrets**: `CF_API_TOKEN`, `CF_ACCOUNT_ID`, `FIAT_API_URL`, `CRYPTO_API_URL` (and optionally `FIAT_API_KEY`, `CRYPTO_API_KEY`, `METALS_API_KEY`)
 4. **Run `static-deploy.yml` once** from the Actions tab to publish flags, names, and symbols to `latest`
 5. **Done** — `daily.yml` and `sub-daily.yml` run automatically on schedule
 
@@ -230,23 +232,28 @@ See [docs/SETUP.md](./docs/SETUP.md) for a full step-by-step guide on how to:
 
 ## Update frequency
 
-The sub-daily workflow (`sub-daily.yml`) runs every hour by default and also supports manual triggers from the Actions tab. To change the frequency, edit the `cron` expression in `.github/workflows/sub-daily.yml`:
+The sub-daily workflow (`sub-daily.yml`) runs every 8 hours by default (3×/day) and also supports manual triggers from the Actions tab. To change the frequency, edit the `cron` expression in `.github/workflows/sub-daily.yml`:
 
 ```yaml
-- cron: "0 * * * *"   # Every hour
+- cron: "0 */8 * * *"  # Every 8 hours (3×/day)
 ```
 
 **Free-tier budget** (sub-daily only, worst-case 31-day month — daily is manual so not counted):
 
-| Expression | Runs/month | Fiat requests | Fits 1 500 limit? |
-|---|---|---|---|
-| `0 * * * *` | ~775 | ~775 | ✅ Yes *(default)* |
-| `*/30 * * * *` | ~1 519 | ~1 519 | ❌ No (31-day months) |
-| `0 */2 * * *` | ~403 | ~403 | ✅ Yes |
-| `0 */6 * * *` | ~155 | ~155 | ✅ Yes |
+| Expression | Runs/month | Fiat requests | Metal requests | Fits all free limits? |
+|---|---|---|---|---|
+| `0 */8 * * *` | ~93 | ~93 | ~93 | ✅ Yes *(default)* |
+| `0 */6 * * *` | ~124 | ~124 | ~124 | ✅ Yes |
+| `0 */4 * * *` | ~186 | ~186 | ~186 | ✅ Yes |
+| `0 */2 * * *` | ~372 | ~372 | ~372 | ✅ Yes |
+| `0 * * * *` | ~744 | ~744 | ~744 | ❌ Exceeds metalpriceapi.com (100/month) |
 
-> Each run makes one request to ExchangeRate-API (1 500/month free) and one to CoinGecko
-> (10 000/month free). The fiat limit is the bottleneck — every-hour is the highest
-> frequency that stays safely within the free tier.
+> Each run makes one request per source: fiat (open.er-api.com — free, no key), crypto
+> (CoinGecko — 10 000/month free), and precious metals (metalpriceapi.com — 100/month free).
+> The metals limit is the bottleneck — every 8 hours is the highest frequency that stays
+> within the free tier across all three sources.
+>
+> If you don't set `METALS_API_KEY`, precious metals are skipped and you can run as
+> frequently as CoinGecko allows.
 
 The daily workflow (`daily.yml`) is **manual-only** and produces date snapshots without a `timestamp` field.

@@ -97,8 +97,22 @@ async fn main() -> Result<()> {
     .await?;
     info!("  -> {} crypto rates", crypto_rates.len());
 
+    // --- Metals (optional) ---
+    let metal_rates = if let Some(key) = cfg.metals_api_key.as_deref() {
+        info!("Fetching metal rates from {}", cfg.metals_api_url);
+        let rates = sources::metals::fetch_metal_rates(&cfg.metals_api_url, key).await?;
+        info!("  -> {} metal rates", rates.len());
+        rates
+    } else {
+        info!("METALS_API_KEY not set — skipping precious metals");
+        Default::default()
+    };
+
     // --- Merge ---
-    let eur_rates = normalize::merge_rates(fiat_rates, crypto_rates);
+    let mut eur_rates = normalize::merge_rates(fiat_rates, crypto_rates);
+    for (k, v) in metal_rates {
+        eur_rates.insert(k, v);
+    }
     info!("Total EUR-based rates: {}", eur_rates.len());
 
     if cli.dry_run {

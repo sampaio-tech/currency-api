@@ -17,6 +17,7 @@ writes a tree of static JSON files ready to be deployed to a CDN.
           ┌──────────▼──────────┐
           │   sources/fiat.rs   │  GET fiat API        → EUR-based fiat rates
           │   sources/crypto.rs │  GET CoinGecko       → EUR-based crypto rates
+          │   sources/metals.rs │  GET metalpriceapi   → EUR-based metal rates (optional)
           └──────────┬──────────┘
                      │ merge
           ┌──────────▼──────────┐
@@ -35,7 +36,10 @@ between any two currencies A → B, the formula is:
 rate(A → B) = eur_rate[B] / eur_rate[A]
 ```
 
-This lets us derive all ~30,000 currency pairs from a single EUR-based map.
+This applies to every supported type — fiat, crypto, and precious metals.
+For example, `rate(XAU → BRL) = eur_rate[BRL] / eur_rate[XAU]`.
+
+This lets us derive all ~40,000 currency pairs from a single EUR-based map.
 
 ---
 
@@ -136,12 +140,14 @@ The entire `dist/` directory is what gets deployed to Cloudflare Pages.
 The CLI reads these at startup. Set them in your shell for local runs or as
 GitHub secrets for CI (see [SETUP.md](./SETUP.md)).
 
-| Variable         | Required | Default                                          | Description                                                  |
-|------------------|----------|--------------------------------------------------|--------------------------------------------------------------|
-| `FIAT_API_URL`   | No       | `https://open.er-api.com/v6/latest/EUR`          | EUR-based fiat endpoint. Compatible with open.er-api.com (`rates`) and exchangerate-api.com v6 (`conversion_rates`). Must use EUR as base. |
-| `FIAT_API_KEY`   | No       | *(none)*                                         | Bearer token for fiat source                                 |
-| `CRYPTO_API_URL` | No       | `https://api.coingecko.com/api/v3/simple/price`  | Crypto price endpoint                                        |
-| `CRYPTO_API_KEY` | No       | *(none)*                                         | `x-cg-demo-api-key` header value                             |
+| Variable          | Required | Default                                                                        | Description                                                  |
+|-------------------|----------|--------------------------------------------------------------------------------|--------------------------------------------------------------|
+| `FIAT_API_URL`    | No       | `https://open.er-api.com/v6/latest/EUR`                                        | EUR-based fiat endpoint. Supports `{key}` placeholder (e.g. `https://v6.exchangerate-api.com/v6/{key}/latest/EUR`). Must use EUR as base. |
+| `FIAT_API_KEY`    | No       | *(none)*                                                                       | Substituted into `{key}` in `FIAT_API_URL`, or sent as Bearer header if no placeholder is present |
+| `CRYPTO_API_URL`  | No       | `https://api.coingecko.com/api/v3/simple/price`                                | CoinGecko-compatible price endpoint                          |
+| `CRYPTO_API_KEY`  | No       | *(none)*                                                                       | `x-cg-demo-api-key` header value                             |
+| `METALS_API_URL`  | No       | `https://api.metalpriceapi.com/v1/latest?base=EUR&currencies=XAU,XAG,XPT,XPD` | Precious metals endpoint (metalpriceapi.com-compatible)      |
+| `METALS_API_KEY`  | No       | *(none)*                                                                       | `X-API-KEY` header value. If not set, metals are silently skipped |
 
 ### Local run with API keys
 
@@ -159,13 +165,17 @@ source .env && cargo run --release
    ```json
    "xyz": "My New Currency"
    ```
-2. If it is a cryptocurrency, also open `data/crypto_ids.json` and map its
-   CoinGecko ID:
-   ```json
-   "xyz": "my-new-currency-coingecko-id"
-   ```
-   You can find the CoinGecko ID at `https://www.coingecko.com` — it is the
-   slug in the coin's URL, e.g. `coingecko.com/en/coins/bitcoin` → `bitcoin`.
+2. Depending on the type:
+   - **Cryptocurrency** — also open `data/crypto_ids.json` and map its CoinGecko ID:
+     ```json
+     "xyz": "my-new-currency-coingecko-id"
+     ```
+     You can find the CoinGecko ID at `https://www.coingecko.com` — it is the
+     slug in the coin's URL, e.g. `coingecko.com/en/coins/bitcoin` → `bitcoin`.
+   - **Precious metal** — ensure `METALS_API_KEY` is set and the metal's ISO code
+     (e.g. `XAU`) is included in the `currencies` query parameter of `METALS_API_URL`.
+     The default URL already includes XAU, XAG, XPT, and XPD.
+   - **Fiat currency** — no extra config needed; the fiat API returns it automatically.
 3. Rebuild and run. The new currency will appear in the output automatically.
 
 ---

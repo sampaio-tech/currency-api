@@ -2,7 +2,7 @@ name: Sub-daily Rate Fetch & Deploy
 
 on:
   schedule:
-    - cron: "0 * * * *"   # Every hour — edit this expression to change frequency
+    - cron: "0 */8 * * *"  # Every 8 hours (3×/day) — limited by metalpriceapi.com free tier (100 req/month)
   workflow_dispatch:        # Allow manual trigger from GitHub UI
 
 env:
@@ -57,10 +57,11 @@ jobs:
 
       - name: Fetch exchange rates and generate static files
         env:
-          FIAT_API_URL:   ${{ secrets.FIAT_API_URL }}
-          FIAT_API_KEY:   ${{ secrets.FIAT_API_KEY }}
-          CRYPTO_API_URL: ${{ secrets.CRYPTO_API_URL }}
-          CRYPTO_API_KEY: ${{ secrets.CRYPTO_API_KEY }}
+          FIAT_API_URL:    ${{ secrets.FIAT_API_URL }}
+          FIAT_API_KEY:    ${{ secrets.FIAT_API_KEY }}
+          CRYPTO_API_URL:  ${{ secrets.CRYPTO_API_URL }}
+          CRYPTO_API_KEY:  ${{ secrets.CRYPTO_API_KEY }}
+          METALS_API_KEY:  ${{ secrets.METALS_API_KEY }}
         run: ./target/release/fetcher --output dist/ --date "${{ steps.snapshot.outputs.iso }}"
 
       # ------------------------------------------------------------------ #
